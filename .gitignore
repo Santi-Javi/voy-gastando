@@ -8,3 +8,4 @@ app/build/
 .tooling/
 local.properties
 *.apk
+.kotlin/

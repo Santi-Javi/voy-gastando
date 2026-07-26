@@ -44,7 +44,14 @@ fun VoyGastandoNavHost(
             ActivePurchaseScreen(
                 uiState = uiState,
                 formatter = moneyFormatter,
-                onAddDemoItem = { viewModel.addItem(1_000L) },
+                events = viewModel.uiEvents,
+                onAppendDigit = viewModel::appendDigit,
+                onBackspace = viewModel::backspace,
+                onClearInput = viewModel::clearInput,
+                onAddCurrentInput = viewModel::addCurrentInput,
+                onUndoLastItem = viewModel::undoLastItem,
+                onRestoreItem = viewModel::restoreItem,
+                onUpdateBudget = viewModel::updateBudget,
                 onErrorShown = viewModel::clearError
             )
         }

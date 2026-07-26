@@ -17,7 +17,11 @@ data class ActivePurchaseUiState(
         averagePerUnit = 0
     ),
     val moneySettings: MoneySettings = MoneySettings(),
+    val currentInput: String = "",
+    val currentAmount: Long = 0,
+    val isAdding: Boolean = false,
     val errorMessage: String? = null
 ) {
     val hasActiveSession: Boolean = activeSession != null
+    val lastItem = activeSession?.items?.maxByOrNull { it.sortOrder }
 }
