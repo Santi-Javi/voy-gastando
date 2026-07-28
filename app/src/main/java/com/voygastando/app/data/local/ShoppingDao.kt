@@ -22,6 +22,10 @@ interface ShoppingDao {
     @Query("SELECT * FROM shopping_sessions WHERE id = :sessionId LIMIT 1")
     fun observeSession(sessionId: Long): Flow<ShoppingSessionWithItems?>
 
+    @Transaction
+    @Query("SELECT * FROM shopping_sessions WHERE status = 'COMPLETED' ORDER BY finishedAt DESC, startedAt DESC")
+    fun observeCompletedSessions(): Flow<List<ShoppingSessionWithItems>>
+
     @Query("SELECT * FROM shopping_sessions WHERE status = 'ACTIVE' LIMIT 1")
     suspend fun getActiveSession(): ShoppingSessionEntity?
 
@@ -30,6 +34,9 @@ interface ShoppingDao {
 
     @Query("SELECT * FROM shopping_items WHERE sessionId = :sessionId ORDER BY sortOrder ASC")
     suspend fun getItems(sessionId: Long): List<ShoppingItemEntity>
+
+    @Query("SELECT * FROM shopping_items WHERE id = :itemId LIMIT 1")
+    suspend fun getItem(itemId: Long): ShoppingItemEntity?
 
     @Query("SELECT * FROM shopping_items WHERE sessionId = :sessionId ORDER BY sortOrder DESC LIMIT 1")
     suspend fun getLastItem(sessionId: Long): ShoppingItemEntity?
@@ -57,6 +64,9 @@ interface ShoppingDao {
 
     @Query("UPDATE shopping_sessions SET budget = :budget WHERE id = :sessionId")
     suspend fun updateBudget(sessionId: Long, budget: Long?)
+
+    @Query("DELETE FROM shopping_sessions WHERE id = :sessionId")
+    suspend fun deleteSessionById(sessionId: Long)
 
     @Transaction
     suspend fun createActiveSession(startedAt: Long, budget: Long?, currencyCode: String, currencySymbol: String): Long {
@@ -104,6 +114,21 @@ interface ShoppingDao {
     suspend fun updateItemAndRecalculate(item: ShoppingItemEntity) {
         updateItem(item.copy(subtotal = item.unitPrice * item.quantity))
         recalculateSessionTotal(item.sessionId)
+    }
+
+    @Transaction
+    suspend fun finishActiveSession(finishedAt: Long): Long {
+        val session = requireNotNull(getActiveSession()) { "No hay una compra activa." }
+        val items = getItems(session.id)
+        require(items.isNotEmpty()) { "La compra todavia no tiene productos." }
+        updateSession(
+            session.copy(
+                finishedAt = finishedAt,
+                status = SessionStatus.COMPLETED,
+                total = items.sumOf { it.subtotal }
+            )
+        )
+        return session.id
     }
 
     @Transaction

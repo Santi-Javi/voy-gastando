@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(
     onStartShopping: (Long?) -> Unit,
+    onOpenHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var budgetText by remember { mutableStateOf("") }
@@ -61,6 +63,13 @@ fun HomeScreen(
                     .height(64.dp)
             ) {
                 Text("INICIAR COMPRA")
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = onOpenHistory,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("HISTORIAL")
             }
         }
     }

@@ -64,6 +64,9 @@ fun ActivePurchaseScreen(
     onUndoLastItem: () -> Unit,
     onRestoreItem: (ShoppingItem) -> Unit,
     onUpdateBudget: (Long?) -> Unit,
+    onViewItems: () -> Unit,
+    onFinishPurchase: () -> Unit,
+    onPurchaseFinished: (Long) -> Unit,
     onErrorShown: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -71,6 +74,7 @@ fun ActivePurchaseScreen(
     val haptics = LocalHapticFeedback.current
     var showQuantityDialog by remember { mutableStateOf(false) }
     var showBudgetDialog by remember { mutableStateOf(false) }
+    var showFinishDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(events) {
         events.collect { event ->
@@ -94,6 +98,10 @@ fun ActivePurchaseScreen(
                 }
                 ActivePurchaseEvent.ItemRestored -> {
                     snackbarHostState.showSnackbar("Importe restaurado.", duration = SnackbarDuration.Short)
+                }
+                is ActivePurchaseEvent.PurchaseFinished -> {
+                    snackbarHostState.showSnackbar("Compra finalizada.", duration = SnackbarDuration.Short)
+                    onPurchaseFinished(event.sessionId)
                 }
                 is ActivePurchaseEvent.Message -> {
                     snackbarHostState.showSnackbar(event.text, duration = SnackbarDuration.Short)
@@ -131,6 +139,18 @@ fun ActivePurchaseScreen(
             onConfirm = { budget ->
                 showBudgetDialog = false
                 onUpdateBudget(budget)
+            }
+        )
+    }
+
+    if (showFinishDialog) {
+        FinishPurchaseDialog(
+            uiState = uiState,
+            formatter = formatter,
+            onDismiss = { showFinishDialog = false },
+            onConfirm = {
+                showFinishDialog = false
+                onFinishPurchase()
             }
         )
     }
@@ -186,7 +206,10 @@ fun ActivePurchaseScreen(
 
             LastAmountBlock(uiState, formatter, onUndoLastItem)
 
-            SecondaryActions()
+            SecondaryActions(
+                onViewItems = onViewItems,
+                onFinishPurchase = { showFinishDialog = true }
+            )
         }
     }
 }
@@ -320,22 +343,71 @@ private fun LastAmountBlock(
 }
 
 @Composable
-private fun SecondaryActions() {
+private fun SecondaryActions(
+    onViewItems: () -> Unit,
+    onFinishPurchase: () -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(
-            onClick = { },
-            enabled = false,
+            onClick = onViewItems,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Ver productos cargados")
         }
         OutlinedButton(
-            onClick = { },
-            enabled = false,
+            onClick = onFinishPurchase,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Finalizar compra")
         }
+    }
+}
+
+@Composable
+private fun FinishPurchaseDialog(
+    uiState: ActivePurchaseUiState,
+    formatter: MoneyFormatter,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val session = uiState.activeSession
+    val budget = session?.budget
+    val difference = budget?.let { it - uiState.totals.total }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Finalizar compra") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Total: ${formatter.format(uiState.totals.total, uiState.moneySettings)}")
+                Text("Productos: ${uiState.totals.unitCount}")
+                Text("Registros: ${uiState.totals.recordCount}")
+                if (budget != null) {
+                    Text("Presupuesto: ${formatter.format(budget, uiState.moneySettings)}")
+                    val label = if ((difference ?: 0) >= 0) "Disponible" else "Excedido"
+                    Text("$label: ${formatter.format(kotlin.math.abs(difference ?: 0), uiState.moneySettings)}")
+                }
+                val startedAt = session?.startedAt ?: System.currentTimeMillis()
+                Text("Duracion: ${formatDuration(System.currentTimeMillis() - startedAt)}")
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text("FINALIZAR") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("CANCELAR") }
+        }
+    )
+}
+
+private fun formatDuration(durationMillis: Long): String {
+    val totalMinutes = (durationMillis / 60_000).coerceAtLeast(0)
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return when {
+        hours > 0 -> "${hours} h ${minutes} min"
+        minutes > 0 -> "${minutes} min"
+        else -> "menos de 1 min"
     }
 }
 

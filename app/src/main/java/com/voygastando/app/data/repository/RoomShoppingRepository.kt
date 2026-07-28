@@ -19,6 +19,12 @@ class RoomShoppingRepository(
     override fun observeActiveSession(): Flow<com.voygastando.app.domain.model.ShoppingSession?> =
         dao.observeActiveSession().map { it?.toDomain() }
 
+    override fun observeSession(sessionId: Long): Flow<com.voygastando.app.domain.model.ShoppingSession?> =
+        dao.observeSession(sessionId).map { it?.toDomain() }
+
+    override fun observeCompletedSessions(): Flow<List<com.voygastando.app.domain.model.ShoppingSession>> =
+        dao.observeCompletedSessions().map { sessions -> sessions.map { it.toDomain() } }
+
     override suspend fun startShoppingSession(budget: Long?): Long {
         require(budget == null || budget > 0) { "El presupuesto debe ser mayor a cero." }
         val settings = settingsRepository.moneySettings.first()
@@ -38,6 +44,25 @@ class RoomShoppingRepository(
             quantity = quantity,
             createdAt = clock()
         ).toDomain()
+    }
+
+    override suspend fun updateItem(itemId: Long, unitPrice: Long, quantity: Int) {
+        val item = dao.getItem(itemId) ?: error("No se encontro el producto.")
+        val session = dao.getSession(item.sessionId) ?: error("No se encontro la compra.")
+        val totalWithoutItem = session.total - item.subtotal
+        moneyCalculator.validateNewItem(unitPrice, quantity, totalWithoutItem)
+        dao.updateItemAndRecalculate(
+            item.copy(
+                unitPrice = unitPrice,
+                quantity = quantity,
+                subtotal = moneyCalculator.subtotal(unitPrice, quantity)
+            )
+        )
+    }
+
+    override suspend fun deleteItem(itemId: Long) {
+        val item = dao.getItem(itemId) ?: error("No se encontro el producto.")
+        dao.deleteItemAndRecalculate(item)
     }
 
     override suspend fun undoLastItem(): ShoppingItem? {
@@ -68,5 +93,15 @@ class RoomShoppingRepository(
         require(budget == null || budget > 0) { "El presupuesto debe ser mayor a cero." }
         val active = dao.getActiveSession() ?: error("No hay una compra activa.")
         dao.updateBudget(active.id, budget)
+    }
+
+    override suspend fun finishActiveSession(): Long = dao.finishActiveSession(clock())
+
+    override suspend fun deleteCompletedSession(sessionId: Long) {
+        val session = dao.getSession(sessionId) ?: error("No se encontro la compra.")
+        require(session.status == com.voygastando.app.data.local.entity.SessionStatus.COMPLETED) {
+            "Solo se pueden eliminar compras finalizadas."
+        }
+        dao.deleteSessionById(sessionId)
     }
 }

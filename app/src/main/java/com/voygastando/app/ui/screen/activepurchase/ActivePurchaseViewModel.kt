@@ -3,6 +3,8 @@ package com.voygastando.app.ui.screen.activepurchase
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.voygastando.app.domain.model.ShoppingItem
+import com.voygastando.app.domain.model.ShoppingSession
 import com.voygastando.app.domain.repository.SettingsRepository
 import com.voygastando.app.domain.repository.ShoppingRepository
 import com.voygastando.app.domain.usecase.MoneyCalculator
@@ -17,7 +19,7 @@ import kotlinx.coroutines.launch
 
 class ActivePurchaseViewModel(
     private val shoppingRepository: ShoppingRepository,
-    settingsRepository: SettingsRepository,
+    private val settingsRepository: SettingsRepository,
     private val moneyCalculator: MoneyCalculator
 ) : ViewModel() {
     private val errorMessage = MutableStateFlow<String?>(null)
@@ -28,6 +30,13 @@ class ActivePurchaseViewModel(
     private var lastAddSignature: Pair<Long, Int>? = null
 
     val uiEvents: SharedFlow<ActivePurchaseEvent> = events
+
+    val completedSessions: StateFlow<List<ShoppingSession>> = shoppingRepository.observeCompletedSessions()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
 
     val uiState: StateFlow<ActivePurchaseUiState> = combine(
         shoppingRepository.observeActiveSession(),
@@ -118,7 +127,7 @@ class ActivePurchaseViewModel(
         }
     }
 
-    fun restoreItem(item: com.voygastando.app.domain.model.ShoppingItem) {
+    fun restoreItem(item: ShoppingItem) {
         viewModelScope.launch {
             runCatching { shoppingRepository.restoreItem(item) }
                 .onSuccess { events.emit(ActivePurchaseEvent.ItemRestored) }
@@ -132,6 +141,40 @@ class ActivePurchaseViewModel(
                 .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo actualizar el presupuesto.")) }
         }
     }
+
+    fun updateItem(itemId: Long, unitPrice: Long, quantity: Int) {
+        viewModelScope.launch {
+            runCatching { shoppingRepository.updateItem(itemId, unitPrice, quantity) }
+                .onSuccess { events.emit(ActivePurchaseEvent.Message("Producto actualizado.")) }
+                .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo actualizar el producto.")) }
+        }
+    }
+
+    fun deleteItem(itemId: Long) {
+        viewModelScope.launch {
+            runCatching { shoppingRepository.deleteItem(itemId) }
+                .onSuccess { events.emit(ActivePurchaseEvent.Message("Producto eliminado.")) }
+                .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo eliminar el producto.")) }
+        }
+    }
+
+    fun finishActiveSession() {
+        viewModelScope.launch {
+            runCatching { shoppingRepository.finishActiveSession() }
+                .onSuccess { sessionId -> events.emit(ActivePurchaseEvent.PurchaseFinished(sessionId)) }
+                .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo finalizar la compra.")) }
+        }
+    }
+
+    fun deleteCompletedSession(sessionId: Long) {
+        viewModelScope.launch {
+            runCatching { shoppingRepository.deleteCompletedSession(sessionId) }
+                .onSuccess { events.emit(ActivePurchaseEvent.Message("Compra eliminada.")) }
+                .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo eliminar la compra.")) }
+        }
+    }
+
+    fun observeSession(sessionId: Long) = shoppingRepository.observeSession(sessionId)
 
     fun clearError() {
         errorMessage.value = null
