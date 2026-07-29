@@ -1,5 +1,6 @@
 package com.voygastando.app.ui.screen.activepurchase
 
+import com.voygastando.app.domain.model.AppSettings
 import com.voygastando.app.domain.model.MoneySettings
 import com.voygastando.app.domain.model.ShoppingSession
 import com.voygastando.app.domain.model.ShoppingTotals
@@ -17,6 +18,7 @@ data class ActivePurchaseUiState(
         averagePerUnit = 0
     ),
     val moneySettings: MoneySettings = MoneySettings(),
+    val appSettings: AppSettings = AppSettings(),
     val currentInput: String = "",
     val currentAmount: Long = 0,
     val isAdding: Boolean = false,

@@ -9,3 +9,5 @@ app/build/
 local.properties
 *.apk
 .kotlin/
+figma-export/
+figma-export-*/

@@ -48,7 +48,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.voygastando.app.domain.model.ShoppingItem
+import com.voygastando.app.ui.components.FigmaCard
 import com.voygastando.app.ui.components.MoneyDisplay
+import com.voygastando.app.ui.components.PrimaryActionButton
+import com.voygastando.app.ui.components.SecondaryActionButton
+import com.voygastando.app.ui.components.SoftPill
 import com.voygastando.app.util.MoneyFormatter
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -80,7 +84,9 @@ fun ActivePurchaseScreen(
         events.collect { event ->
             when (event) {
                 is ActivePurchaseEvent.ItemAdded -> {
-                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    if (uiState.appSettings.vibrateOnAdd) {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
                     snackbarHostState.showSnackbar(
                         message = "Importe agregado: ${formatter.format(event.subtotal, uiState.moneySettings)}",
                         duration = SnackbarDuration.Short
@@ -157,6 +163,7 @@ fun ActivePurchaseScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
@@ -164,8 +171,8 @@ fun ActivePurchaseScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             HeaderTotals(uiState, formatter, onEditBudget = { showBudgetDialog = true })
 
@@ -188,27 +195,34 @@ fun ActivePurchaseScreen(
                     },
                     modifier = Modifier
                         .weight(0.9f)
-                        .height(62.dp),
-                    enabled = !uiState.isAdding
+                        .height(58.dp),
+                    enabled = !uiState.isAdding,
+                    shape = RoundedCornerShape(18.dp),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("CANTIDAD", fontWeight = FontWeight.Bold)
+                    Text("CANTIDAD", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                 }
-                Button(
+                PrimaryActionButton(
+                    text = "SUMAR",
                     onClick = { onAddCurrentInput(1) },
                     modifier = Modifier
                         .weight(1.35f)
-                        .height(62.dp),
+                        .height(58.dp),
                     enabled = !uiState.isAdding
-                ) {
-                    Text("SUMAR", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                }
+                )
             }
 
             LastAmountBlock(uiState, formatter, onUndoLastItem)
 
             SecondaryActions(
                 onViewItems = onViewItems,
-                onFinishPurchase = { showFinishDialog = true }
+                onFinishPurchase = {
+                    if (uiState.appSettings.confirmBeforeFinish) {
+                        showFinishDialog = true
+                    } else {
+                        onFinishPurchase()
+                    }
+                }
             )
         }
     }
@@ -220,23 +234,23 @@ private fun HeaderTotals(
     formatter: MoneyFormatter,
     onEditBudget: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "TOTAL DEL CARRITO",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold
-        )
-        MoneyDisplay(
-            amount = uiState.totals.total,
-            formatter = formatter,
-            settings = uiState.moneySettings,
-            large = true
-        )
+    val exceeded = uiState.totals.budgetExceeded != null
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (exceeded) androidx.compose.ui.graphics.Color(0xFFFFEEEE) else MaterialTheme.colorScheme.secondary,
+                RoundedCornerShape(22.dp)
+            )
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("TOTAL DEL CARRITO", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        MoneyDisplay(uiState.totals.total, formatter, uiState.moneySettings, large = true)
         BudgetBlock(uiState, formatter, onEditBudget)
-        Text(
+        SoftPill(
             text = "${uiState.totals.unitCount} ${if (uiState.totals.unitCount == 1) "producto" else "productos"}",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold
+            color = if (exceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -246,21 +260,20 @@ private fun CurrentInputDisplay(
     uiState: ActivePurchaseUiState,
     formatter: MoneyFormatter
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("IMPORTE", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            MoneyDisplay(
-                amount = uiState.currentAmount,
-                formatter = formatter,
-                settings = uiState.moneySettings,
-                large = false
-            )
+    FigmaCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("IMPORTE", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Text(
+                    text = if (uiState.currentAmount > 0) formatter.format(uiState.currentAmount, uiState.moneySettings) else "$ 0",
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (uiState.currentAmount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+                )
+            }
         }
     }
 }
@@ -292,29 +305,28 @@ private fun NumericKeypad(
                         },
                         modifier = Modifier
                             .weight(1f)
-                            .height(58.dp)
+                            .height(56.dp)
                             .semantics { contentDescription = if (key == "←") "Borrar último dígito" else "Número $key" },
                         enabled = enabled,
+                        shape = RoundedCornerShape(16.dp),
                         colors = if (key == "←") {
-                            ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         } else {
-                            ButtonDefaults.buttonColors()
+                            ButtonDefaults.buttonColors(
+                                containerColor = androidx.compose.ui.graphics.Color.White,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     ) {
-                        Text(key, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text(key, fontSize = 24.sp, fontWeight = FontWeight.Black)
                     }
                 }
             }
         }
-        OutlinedButton(
-            onClick = onClear,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            enabled = enabled
-        ) {
-            Text("BORRAR IMPORTE")
-        }
+        SecondaryActionButton("BORRAR IMPORTE", onClear, enabled = enabled)
     }
 }
 
@@ -329,16 +341,9 @@ private fun LastAmountBlock(
         Text(
             text = "Último importe: ${formatter.format(lastItem?.subtotal ?: 0, uiState.moneySettings)}",
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.Black
         )
-        OutlinedButton(
-            onClick = onUndoLastItem,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
-        ) {
-            Text("DESHACER ÚLTIMO", fontWeight = FontWeight.Bold)
-        }
+        SecondaryActionButton("DESHACER ÚLTIMO", onUndoLastItem)
     }
 }
 
@@ -348,17 +353,9 @@ private fun SecondaryActions(
     onFinishPurchase: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(
-            onClick = onViewItems,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Ver productos cargados")
-        }
-        OutlinedButton(
-            onClick = onFinishPurchase,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Finalizar compra")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SecondaryActionButton("Ver productos", onViewItems, modifier = Modifier.weight(1f))
+            SecondaryActionButton("Finalizar", onFinishPurchase, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -514,9 +511,7 @@ private fun BudgetBlock(
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (budget == null) {
-            OutlinedButton(onClick = onEditBudget, modifier = Modifier.fillMaxWidth()) {
-                Text("Agregar presupuesto")
-            }
+            TextButton(onClick = onEditBudget) { Text("+ Agregar presupuesto", fontWeight = FontWeight.Black) }
             return
         }
 
@@ -525,24 +520,30 @@ private fun BudgetBlock(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Presupuesto: ${formatter.format(budget, uiState.moneySettings)}", fontWeight = FontWeight.SemiBold)
-            TextButton(onClick = onEditBudget) { Text("Editar") }
+            Text("Presupuesto: ${formatter.format(budget, uiState.moneySettings)}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            TextButton(onClick = onEditBudget) { Text("Editar", fontWeight = FontWeight.Black) }
         }
         LinearProgressIndicator(
             progress = { progress },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp),
+            color = if (uiState.totals.budgetExceeded != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            trackColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.10f)
         )
-        Text("Usado: $percent%")
+        Text("Usado: $percent%", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         val exceeded = uiState.totals.budgetExceeded
         if (exceeded != null) {
             Text(
                 text = "Excedido: ${formatter.format(exceeded, uiState.moneySettings)}",
                 color = MaterialTheme.colorScheme.error,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Black
             )
         } else {
             Text(
-                text = "Disponible: ${formatter.format(uiState.totals.budgetRemaining ?: 0, uiState.moneySettings)}"
+                text = "Disponible: ${formatter.format(uiState.totals.budgetRemaining ?: 0, uiState.moneySettings)}",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Black
             )
         }
     }

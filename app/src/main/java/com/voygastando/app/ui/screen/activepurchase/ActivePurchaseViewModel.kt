@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.voygastando.app.domain.model.ShoppingItem
 import com.voygastando.app.domain.model.ShoppingSession
+import com.voygastando.app.domain.model.AppThemeMode
 import com.voygastando.app.domain.repository.SettingsRepository
 import com.voygastando.app.domain.repository.ShoppingRepository
 import com.voygastando.app.domain.usecase.MoneyCalculator
@@ -40,17 +41,18 @@ class ActivePurchaseViewModel(
 
     val uiState: StateFlow<ActivePurchaseUiState> = combine(
         shoppingRepository.observeActiveSession(),
-        settingsRepository.moneySettings,
+        settingsRepository.appSettings,
         currentInput,
         isAdding,
         errorMessage
-    ) { session, settings, input, adding, error ->
+    ) { session, appSettings, input, adding, error ->
         val amount = input.toLongOrNull() ?: 0L
         ActivePurchaseUiState(
             isLoading = false,
             activeSession = session,
             totals = moneyCalculator.totals(session),
-            moneySettings = settings,
+            moneySettings = appSettings.moneySettings,
+            appSettings = appSettings,
             currentInput = input,
             currentAmount = amount,
             isAdding = adding,
@@ -140,6 +142,41 @@ class ActivePurchaseViewModel(
             runCatching { shoppingRepository.updateBudget(budget) }
                 .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo actualizar el presupuesto.")) }
         }
+    }
+
+    fun setCurrencySymbol(symbol: String) {
+        viewModelScope.launch {
+            runCatching { settingsRepository.setCurrencySymbol(symbol) }
+                .onFailure { events.emit(ActivePurchaseEvent.Message("No se pudo guardar la moneda.")) }
+        }
+    }
+
+    fun setCentsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setCentsEnabled(enabled) }
+    }
+
+    fun setVibrateOnAdd(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setVibrateOnAdd(enabled) }
+    }
+
+    fun setSoundOnAdd(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setSoundOnAdd(enabled) }
+    }
+
+    fun setKeepScreenOnDuringPurchase(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setKeepScreenOnDuringPurchase(enabled) }
+    }
+
+    fun setHideAmountsOnLockScreen(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setHideAmountsOnLockScreen(enabled) }
+    }
+
+    fun setConfirmBeforeFinish(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setConfirmBeforeFinish(enabled) }
+    }
+
+    fun setThemeMode(mode: AppThemeMode) {
+        viewModelScope.launch { settingsRepository.setThemeMode(mode) }
     }
 
     fun updateItem(itemId: Long, unitPrice: Long, quantity: Int) {

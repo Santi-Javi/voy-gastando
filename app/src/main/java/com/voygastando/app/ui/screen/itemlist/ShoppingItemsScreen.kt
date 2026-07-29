@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -28,9 +27,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.voygastando.app.domain.model.MoneySettings
 import com.voygastando.app.domain.model.ShoppingItem
 import com.voygastando.app.domain.model.ShoppingSession
+import com.voygastando.app.ui.components.EmptyState
+import com.voygastando.app.ui.components.FigmaCard
+import com.voygastando.app.ui.components.SecondaryActionButton
+import com.voygastando.app.ui.components.TopBar
 import com.voygastando.app.util.MoneyFormatter
 import com.voygastando.app.util.formatTime
 
@@ -81,25 +85,18 @@ fun ShoppingItemsScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text("Productos cargados", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text("Total: ${formatter.format(session?.total ?: 0, moneySettings)}")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f)) { Text("Volver") }
-                    OutlinedButton(
-                        onClick = { newestFirst = !newestFirst },
-                        modifier = Modifier.weight(1f)
-                    ) {
+            TopBar(
+                title = "Productos cargados",
+                subtitle = "Total: ${formatter.format(session?.total ?: 0, moneySettings)}",
+                onBack = onBack,
+                action = {
+                    OutlinedButton(onClick = { newestFirst = !newestFirst }) {
                         Text(if (newestFirst) "Recientes" else "Antiguos")
                     }
                 }
-            }
+            )
         }
     ) { padding ->
         val items = session?.items.orEmpty().let { list ->
@@ -114,7 +111,7 @@ fun ShoppingItemsScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Todavia no hay productos cargados.", style = MaterialTheme.typography.bodyLarge)
+                EmptyState("Todavía no hay productos", "Los importes que sumes van a aparecer acá.")
             }
             return@Scaffold
         }
@@ -151,20 +148,26 @@ private fun ShoppingItemRow(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "$index. ${formatter.format(item.unitPrice, moneySettings)} x ${item.quantity} = ${formatter.format(item.subtotal, moneySettings)}",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Text(formatTime(item.createdAt), style = MaterialTheme.typography.bodyMedium)
-        if (!readOnly) {
+    FigmaCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Editar") }
-                OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Eliminar") }
+                Text("$index.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = "${formatter.format(item.unitPrice, moneySettings)} x ${item.quantity} = ${formatter.format(item.subtotal, moneySettings)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(formatTime(item.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                }
+            }
+            if (!readOnly) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SecondaryActionButton("Editar", onEdit, modifier = Modifier.weight(1f))
+                    SecondaryActionButton("Eliminar", onDelete, modifier = Modifier.weight(1f))
+                }
             }
         }
-        HorizontalDivider()
     }
 }
 

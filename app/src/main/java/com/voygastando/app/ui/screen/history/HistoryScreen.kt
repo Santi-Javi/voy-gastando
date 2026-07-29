@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -24,8 +23,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.voygastando.app.domain.model.MoneySettings
 import com.voygastando.app.domain.model.ShoppingSession
+import com.voygastando.app.ui.components.EmptyState
+import com.voygastando.app.ui.components.FigmaCard
+import com.voygastando.app.ui.components.PrimaryActionButton
+import com.voygastando.app.ui.components.SecondaryActionButton
+import com.voygastando.app.ui.components.TopBar
 import com.voygastando.app.util.MoneyFormatter
 import com.voygastando.app.util.formatDate
 import com.voygastando.app.util.formatDurationText
@@ -61,16 +66,9 @@ fun HistoryScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text("Historial", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Volver") }
-            }
+            TopBar(title = "Historial", subtitle = "${sessions.size} compras finalizadas", onBack = onBack)
         }
     ) { padding ->
         if (sessions.isEmpty()) {
@@ -81,7 +79,7 @@ fun HistoryScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("Todavia no hay compras finalizadas.")
+                EmptyState("Todavía no hay compras", "Cuando finalices una compra, va a aparecer en este historial.")
             }
             return@Scaffold
         }
@@ -117,19 +115,29 @@ private fun HistoryRow(
     val units = session.items.sumOf { it.quantity }
     val budget = session.budget
     val difference = budget?.let { it - session.total }
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(formatDate(session.startedAt), fontWeight = FontWeight.Bold)
-        Text("Total: ${formatter.format(session.total, moneySettings)}")
-        Text("Productos: $units")
-        if (budget != null) {
-            val label = if ((difference ?: 0) >= 0) "Disponible" else "Excedido"
-            Text("$label: ${formatter.format(kotlin.math.abs(difference ?: 0), moneySettings)}")
+    FigmaCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Column {
+                    Text(formatDate(session.startedAt), fontWeight = FontWeight.Black)
+                    Text("${formatDurationText(session.startedAt, session.finishedAt ?: session.startedAt)} · $units productos", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                }
+                Text(formatter.format(session.total, moneySettings), fontWeight = FontWeight.Black, fontSize = 20.sp)
+            }
+            if (budget != null) {
+                val label = if ((difference ?: 0) >= 0) "Disponible" else "Excedido"
+                val color = if ((difference ?: 0) >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                Text(
+                    "$label: ${formatter.format(kotlin.math.abs(difference ?: 0), moneySettings)}",
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PrimaryActionButton("Abrir", onOpen, modifier = Modifier.weight(1f))
+                SecondaryActionButton("Eliminar", onDelete, modifier = Modifier.weight(1f))
+            }
         }
-        Text("Duracion: ${formatDurationText(session.startedAt, session.finishedAt ?: session.startedAt)}")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onOpen, modifier = Modifier.weight(1f)) { Text("Abrir") }
-            OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Eliminar") }
-        }
-        HorizontalDivider()
     }
 }
