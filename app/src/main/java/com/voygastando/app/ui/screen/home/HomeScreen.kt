@@ -1,15 +1,12 @@
 package com.voygastando.app.ui.screen.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.voygastando.app.ui.components.AppMark
 import com.voygastando.app.ui.components.FigmaCard
 import com.voygastando.app.ui.components.PrimaryActionButton
 import com.voygastando.app.ui.components.SecondaryActionButton
@@ -49,39 +47,34 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(82.dp)
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(24.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("▱", color = MaterialTheme.colorScheme.onPrimary, fontSize = 42.sp, fontWeight = FontWeight.Black)
-            }
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(44.dp))
+            AppMark()
+            Spacer(Modifier.height(20.dp))
             Text(
                 text = "Voy Gastando",
-                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Llevá el control de tu compra",
+                text = "Lleva el control de tu compra",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(28.dp))
-            FigmaCard {
+
+            FigmaCard(padding = 16) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Presupuesto", fontWeight = FontWeight.Black, fontSize = 14.sp)
-                    Text("Podés dejarlo vacío.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                    Text("Podes dejarlo vacio.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                     OutlinedTextField(
                         value = budgetText,
-                        onValueChange = { value -> budgetText = value.filter { it.isDigit() } },
+                        onValueChange = { value -> budgetText = value.filter { it.isDigit() }.take(10) },
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
                             Text(
@@ -94,7 +87,7 @@ fun HomeScreen(
                         placeholder = { Text("100.000") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -104,13 +97,15 @@ fun HomeScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(18.dp))
+
+            Spacer(Modifier.height(16.dp))
             PrimaryActionButton(
                 text = "INICIAR COMPRA",
+                height = 64,
                 onClick = { onStartShopping(budgetText.toLongOrNull()?.takeIf { it > 0 }) }
             )
             Spacer(Modifier.height(12.dp))
-            SecondaryActionButton("HISTORIAL", onOpenHistory)
+            SecondaryActionButton("HISTORIAL", onOpenHistory, height = 52)
         }
     }
 }

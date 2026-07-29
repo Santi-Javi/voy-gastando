@@ -8,6 +8,7 @@ app/build/
 .tooling/
 local.properties
 *.apk
+*.zip
 .kotlin/
 figma-export/
 figma-export-*/

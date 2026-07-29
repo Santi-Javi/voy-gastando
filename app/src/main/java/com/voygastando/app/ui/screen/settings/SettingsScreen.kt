@@ -59,7 +59,7 @@ fun SettingsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopBar(
-                title = "Configuración",
+                title = "Configuracion",
                 subtitle = "Preferencias locales de la app",
                 onBack = onBack
             )
@@ -70,7 +70,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SettingsSection("Moneda") {
@@ -81,10 +81,10 @@ fun SettingsScreen(
                         symbolText = it.take(5)
                         onCurrencySymbolChange(symbolText)
                     },
-                    label = { Text("Símbolo") },
+                    label = { Text("Simbolo") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -92,38 +92,18 @@ fun SettingsScreen(
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
-                SettingsToggle(
-                    title = "Centavos",
-                    subtitle = "Desactivados por defecto.",
-                    checked = settings.moneySettings.centsEnabled,
-                    onCheckedChange = onCentsEnabledChange
-                )
+                SettingsToggle("Centavos", "Desactivados por defecto.", settings.moneySettings.centsEnabled, onCentsEnabledChange)
             }
 
-            SettingsSection("Carga rápida") {
-                SettingsToggle("Vibración al agregar", "Confirmación breve al sumar.", settings.vibrateOnAdd, onVibrateChange)
+            SettingsSection("Carga rapida") {
+                SettingsToggle("Vibracion al agregar", "Confirmacion breve al sumar.", settings.vibrateOnAdd, onVibrateChange)
                 SettingsToggle("Sonido al agregar", "Desactivado por defecto.", settings.soundOnAdd, onSoundChange)
-                SettingsToggle(
-                    "Mantener pantalla encendida",
-                    "Puede aumentar el consumo de batería.",
-                    settings.keepScreenOnDuringPurchase,
-                    onKeepScreenOnChange
-                )
-                SettingsToggle(
-                    "Confirmar antes de finalizar",
-                    "Evita cierres accidentales.",
-                    settings.confirmBeforeFinish,
-                    onConfirmBeforeFinishChange
-                )
+                SettingsToggle("Mantener pantalla encendida", "Puede aumentar el consumo de bateria.", settings.keepScreenOnDuringPurchase, onKeepScreenOnChange)
+                SettingsToggle("Confirmar antes de finalizar", "Evita cierres accidentales.", settings.confirmBeforeFinish, onConfirmBeforeFinishChange)
             }
 
             SettingsSection("Privacidad") {
-                SettingsToggle(
-                    "Ocultar importes en pantalla bloqueada",
-                    "Se usará en la notificación persistente.",
-                    settings.hideAmountsOnLockScreen,
-                    onHideLockAmountsChange
-                )
+                SettingsToggle("Ocultar importes en pantalla bloqueada", "Se usara en la notificacion persistente.", settings.hideAmountsOnLockScreen, onHideLockAmountsChange)
                 Text(
                     "Voy Gastando funciona sin internet, sin cuentas, sin analytics y sin recopilar datos personales.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -136,14 +116,14 @@ fun SettingsScreen(
                 ThemeSelector(settings.themeMode, onThemeModeChange)
             }
 
-            SettingsSection("Acceso rápido") {
-                Text("Quick Settings Tile: agregá el mosaico “Voy Gastando” desde el panel de ajustes rápidos de Android.", fontSize = 13.sp)
-                Text("Botón lateral: en teléfonos compatibles, configurá la doble pulsación desde Ajustes del sistema.", fontSize = 13.sp)
+            SettingsSection("Acceso rapido") {
+                Text("Quick Settings Tile: agrega el mosaico Voy Gastando desde el panel de ajustes rapidos de Android.", fontSize = 13.sp)
+                Text("Boton lateral: en telefonos compatibles, configura la doble pulsacion desde Ajustes del sistema.", fontSize = 13.sp)
             }
 
-            SettingsSection("Información") {
-                Text("Versión 0.1.0", fontWeight = FontWeight.Bold)
-                Text("Política local: la app guarda tus compras solo en este dispositivo.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            SettingsSection("Informacion") {
+                Text("Version 0.1.0", fontWeight = FontWeight.Bold)
+                Text("Politica local: la app guarda tus compras solo en este dispositivo.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             }
         }
     }

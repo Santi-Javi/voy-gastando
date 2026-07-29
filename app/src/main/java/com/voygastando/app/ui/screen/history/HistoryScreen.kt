@@ -1,17 +1,20 @@
 package com.voygastando.app.ui.screen.history
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,13 +30,11 @@ import androidx.compose.ui.unit.sp
 import com.voygastando.app.domain.model.MoneySettings
 import com.voygastando.app.domain.model.ShoppingSession
 import com.voygastando.app.ui.components.EmptyState
-import com.voygastando.app.ui.components.FigmaCard
-import com.voygastando.app.ui.components.PrimaryActionButton
-import com.voygastando.app.ui.components.SecondaryActionButton
 import com.voygastando.app.ui.components.TopBar
 import com.voygastando.app.util.MoneyFormatter
 import com.voygastando.app.util.formatDate
 import com.voygastando.app.util.formatDurationText
+import kotlin.math.abs
 
 @Composable
 fun HistoryScreen(
@@ -50,7 +51,8 @@ fun HistoryScreen(
     deletingSession?.let { session ->
         AlertDialog(
             onDismissRequest = { deletingSession = null },
-            title = { Text("Eliminar compra") },
+            shape = RoundedCornerShape(28.dp),
+            title = { Text("Eliminar compra", fontWeight = FontWeight.Black) },
             text = { Text("Se eliminara esta compra finalizada y sus productos.") },
             confirmButton = {
                 Button(onClick = {
@@ -79,7 +81,7 @@ fun HistoryScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                EmptyState("Todavía no hay compras", "Cuando finalices una compra, va a aparecer en este historial.")
+                EmptyState("Todavia no hay compras", "Cuando finalices una compra, va a aparecer en este historial.")
             }
             return@Scaffold
         }
@@ -88,8 +90,7 @@ fun HistoryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
             items(sessions, key = { it.id }) { session ->
                 HistoryRow(
@@ -99,6 +100,7 @@ fun HistoryScreen(
                     onOpen = { onOpenSummary(session.id) },
                     onDelete = { deletingSession = session }
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             }
         }
     }
@@ -115,28 +117,53 @@ private fun HistoryRow(
     val units = session.items.sumOf { it.quantity }
     val budget = session.budget
     val difference = budget?.let { it - session.total }
-    FigmaCard {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Text(formatDate(session.startedAt), fontWeight = FontWeight.Black)
-                    Text("${formatDurationText(session.startedAt, session.finishedAt ?: session.startedAt)} · $units productos", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                }
-                Text(formatter.format(session.total, moneySettings), fontWeight = FontWeight.Black, fontSize = 20.sp)
-            }
-            if (budget != null) {
-                val label = if ((difference ?: 0) >= 0) "Disponible" else "Excedido"
-                val color = if ((difference ?: 0) >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+    val exceeded = difference != null && difference < 0
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f)) {
+                Text(formatDate(session.startedAt), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Text(
-                    "$label: ${formatter.format(kotlin.math.abs(difference ?: 0), moneySettings)}",
-                    color = color,
-                    fontWeight = FontWeight.Bold,
+                    "${formatDurationText(session.startedAt, session.finishedAt ?: session.startedAt)} - $units unidades",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PrimaryActionButton("Abrir", onOpen, modifier = Modifier.weight(1f))
-                SecondaryActionButton("Eliminar", onDelete, modifier = Modifier.weight(1f))
+            Text(formatter.format(session.total, moneySettings), fontWeight = FontWeight.Black, fontSize = 20.sp)
+        }
+        if (budget != null) {
+            val label = if (exceeded) "Excedido" else "Disponible"
+            val color = if (exceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+            Text(
+                "$label: ${formatter.format(abs(difference ?: 0), moneySettings)}",
+                color = color,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(
+                onClick = onOpen,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(38.dp)
+                    .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp))
+            ) {
+                Text("Abrir", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, fontSize = 12.sp)
+            }
+            TextButton(
+                onClick = onDelete,
+                modifier = Modifier
+                    .height(38.dp)
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 10.dp)
+            ) {
+                Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Black, fontSize = 12.sp)
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.voygastando.app.ui.screen.itemlist
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,11 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -23,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,7 +72,8 @@ fun ShoppingItemsScreen(
     deletingItem?.let { item ->
         AlertDialog(
             onDismissRequest = { deletingItem = null },
-            title = { Text("Eliminar producto") },
+            shape = RoundedCornerShape(28.dp),
+            title = { Text("Eliminar producto", fontWeight = FontWeight.Black) },
             text = { Text("Esta accion recalcula el total de la compra.") },
             confirmButton = {
                 Button(onClick = {
@@ -88,15 +92,32 @@ fun ShoppingItemsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopBar(
-                title = "Productos cargados",
+                title = if (readOnly) "Detalle de compra" else "Productos cargados",
                 subtitle = "Total: ${formatter.format(session?.total ?: 0, moneySettings)}",
                 onBack = onBack,
                 action = {
-                    OutlinedButton(onClick = { newestFirst = !newestFirst }) {
-                        Text(if (newestFirst) "Recientes" else "Antiguos")
+                    TextButton(onClick = { newestFirst = !newestFirst }) {
+                        Text(if (newestFirst) "Recientes" else "Antiguos", fontWeight = FontWeight.Black, fontSize = 12.sp)
                     }
                 }
             )
+        },
+        bottomBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
+            ) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Total", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                    Text(
+                        formatter.format(session?.total ?: 0, moneySettings),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
         }
     ) { padding ->
         val items = session?.items.orEmpty().let { list ->
@@ -111,7 +132,7 @@ fun ShoppingItemsScreen(
                     .padding(24.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                EmptyState("Todavía no hay productos", "Los importes que sumes van a aparecer acá.")
+                EmptyState("Todavia no hay productos", "Los importes que sumes van a aparecer aca.")
             }
             return@Scaffold
         }
@@ -120,8 +141,7 @@ fun ShoppingItemsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
             itemsIndexed(items) { index, item ->
                 ShoppingItemRow(
@@ -133,6 +153,7 @@ fun ShoppingItemsScreen(
                     onEdit = { editingItem = item },
                     onDelete = { deletingItem = item }
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             }
         }
     }
@@ -148,23 +169,30 @@ private fun ShoppingItemRow(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    FigmaCard {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("$index.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = "${formatter.format(item.unitPrice, moneySettings)} x ${item.quantity} = ${formatter.format(item.subtotal, moneySettings)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black
-                    )
-                    Text(formatTime(item.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text("$index.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "${formatter.format(item.unitPrice, moneySettings)} x ${item.quantity} = ${formatter.format(item.subtotal, moneySettings)}",
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black
+            )
+            Text(formatTime(item.createdAt), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+        }
+        if (!readOnly) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                TextButton(onClick = onEdit, modifier = Modifier.height(32.dp)) {
+                    Text("Editar", fontWeight = FontWeight.Black, fontSize = 12.sp)
                 }
-            }
-            if (!readOnly) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SecondaryActionButton("Editar", onEdit, modifier = Modifier.weight(1f))
-                    SecondaryActionButton("Eliminar", onDelete, modifier = Modifier.weight(1f))
+                TextButton(onClick = onDelete, modifier = Modifier.height(32.dp)) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Black, fontSize = 12.sp)
                 }
             }
         }
@@ -186,7 +214,8 @@ private fun EditItemDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Editar producto") },
+        shape = RoundedCornerShape(28.dp),
+        title = { Text("Editar producto", fontWeight = FontWeight.Black) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
@@ -194,23 +223,31 @@ private fun EditItemDialog(
                     onValueChange = { priceText = it.filter(Char::isDigit).take(10) },
                     label = { Text("Precio unitario") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(14.dp)
                 )
                 OutlinedTextField(
                     value = quantityText,
                     onValueChange = { quantityText = it.filter(Char::isDigit).take(2) },
                     label = { Text("Cantidad") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(14.dp)
                 )
-                Text("Subtotal: ${formatter.format(price * quantity.coerceAtLeast(0), moneySettings)}")
+                FigmaCard(padding = 12) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Text("Subtotal", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        Text(formatter.format(price * quantity.coerceAtLeast(0), moneySettings), color = MaterialTheme.colorScheme.primary, fontSize = 28.sp, fontWeight = FontWeight.Black)
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = { onConfirm(price, quantity) },
                 enabled = price > 0 && quantity in 1..99,
-                modifier = Modifier.height(48.dp)
+                modifier = Modifier.height(48.dp),
+                shape = RoundedCornerShape(16.dp)
             ) { Text("GUARDAR") }
         },
         dismissButton = {
