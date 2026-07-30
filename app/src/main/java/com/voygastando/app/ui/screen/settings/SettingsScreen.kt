@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.voygastando.app.domain.model.AppSettings
@@ -117,8 +118,8 @@ fun SettingsScreen(
             }
 
             SettingsSection("Acceso rapido") {
-                Text("Quick Settings Tile: agrega el mosaico Voy Gastando desde el panel de ajustes rapidos de Android.", fontSize = 13.sp)
-                Text("Boton lateral: en telefonos compatibles, configura la doble pulsacion desde Ajustes del sistema.", fontSize = 13.sp)
+                Text("Mosaico rapido: agrega Voy Gastando desde Ajustes rapidos de Android.", fontSize = 13.sp, lineHeight = 17.sp)
+                Text("Boton lateral: en telefonos compatibles, usa la doble pulsacion desde Ajustes del sistema.", fontSize = 13.sp, lineHeight = 17.sp)
             }
 
             SettingsSection("Informacion") {
@@ -194,6 +195,12 @@ private fun ThemeButton(
             contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
         )
     ) {
-        Text(text, fontWeight = FontWeight.Black, fontSize = 12.sp)
+        Text(
+            text,
+            fontWeight = FontWeight.Black,
+            fontSize = 11.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

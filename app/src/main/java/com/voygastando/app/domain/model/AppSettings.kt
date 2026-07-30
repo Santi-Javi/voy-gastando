@@ -7,5 +7,5 @@ data class AppSettings(
     val keepScreenOnDuringPurchase: Boolean = false,
     val hideAmountsOnLockScreen: Boolean = true,
     val confirmBeforeFinish: Boolean = true,
-    val themeMode: AppThemeMode = AppThemeMode.SYSTEM
+    val themeMode: AppThemeMode = AppThemeMode.LIGHT
 )

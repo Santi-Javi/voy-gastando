@@ -1,6 +1,7 @@
 package com.voygastando.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -28,9 +29,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -76,7 +80,14 @@ fun PrimaryActionButton(
             disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
         )
     ) {
-        Text(text, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 0.sp)
+        Text(
+            text = text,
+            fontWeight = FontWeight.Black,
+            fontSize = 17.sp,
+            letterSpacing = 0.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -103,7 +114,14 @@ fun SecondaryActionButton(
             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {
-        Text(text, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, letterSpacing = 0.sp)
+        Text(
+            text = text,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 13.sp,
+            letterSpacing = 0.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -121,7 +139,7 @@ fun FigmaIconButton(
             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(14.dp)),
         enabled = enabled
     ) {
-        Text(text, fontWeight = FontWeight.Black, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
+        Text(text, fontWeight = FontWeight.Black, fontSize = 17.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
     }
 }
 
@@ -137,7 +155,7 @@ fun TopBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outline)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -145,9 +163,22 @@ fun TopBar(
             FigmaIconButton(text = "<", onClick = onBack, modifier = Modifier.size(40.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, fontSize = 18.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                title,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             if (subtitle != null) {
-                Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                Text(
+                    subtitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
         if (action != null) {
@@ -169,7 +200,7 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("□", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f), fontSize = 50.sp)
+        Text("□", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f), fontSize = 44.sp)
         Text(title, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f), textAlign = TextAlign.Center, fontSize = 12.sp, lineHeight = 16.sp)
     }
@@ -188,7 +219,9 @@ fun SoftPill(
             .padding(horizontal = 10.dp, vertical = 6.dp),
         color = color,
         fontWeight = FontWeight.Black,
-        fontSize = 12.sp
+        fontSize = 12.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
     )
 }
 
@@ -207,13 +240,10 @@ fun StatRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-            Text(value, color = valueColor, fontWeight = FontWeight.Black, fontSize = 16.sp, textAlign = TextAlign.End)
+            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp, maxLines = 1)
+            Text(value, color = valueColor, fontWeight = FontWeight.Black, fontSize = 16.sp, textAlign = TextAlign.End, maxLines = 1)
         }
-        HorizontalDivider(
-            thickness = DividerDefaults.Thickness,
-            color = MaterialTheme.colorScheme.outline
-        )
+        HorizontalDivider(thickness = DividerDefaults.Thickness, color = MaterialTheme.colorScheme.outline)
     }
 }
 
@@ -222,11 +252,30 @@ fun AppMark(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(80.dp)
-            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(24.dp))
-            .shadow(10.dp, RoundedCornerShape(24.dp), clip = false),
+            .shadow(10.dp, RoundedCornerShape(24.dp), clip = false)
+            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(24.dp)),
         contentAlignment = Alignment.Center
     ) {
-        Text("VG", color = MaterialTheme.colorScheme.onPrimary, fontSize = 28.sp, fontWeight = FontWeight.Black)
+        CartGlyph(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(48.dp))
+    }
+}
+
+@Composable
+fun CartGlyph(
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier) {
+        val strokeWidth = 5.dp.toPx()
+        fun point(x: Float, y: Float) = Offset(size.width * x, size.height * y)
+        drawLine(color, point(0.08f, 0.18f), point(0.22f, 0.18f), strokeWidth, StrokeCap.Round)
+        drawLine(color, point(0.22f, 0.18f), point(0.34f, 0.64f), strokeWidth, StrokeCap.Round)
+        drawLine(color, point(0.34f, 0.64f), point(0.82f, 0.64f), strokeWidth, StrokeCap.Round)
+        drawLine(color, point(0.30f, 0.32f), point(0.88f, 0.32f), strokeWidth, StrokeCap.Round)
+        drawLine(color, point(0.88f, 0.32f), point(0.78f, 0.53f), strokeWidth, StrokeCap.Round)
+        drawLine(color, point(0.78f, 0.53f), point(0.33f, 0.53f), strokeWidth, StrokeCap.Round)
+        drawCircle(color, radius = 3.5.dp.toPx(), center = point(0.44f, 0.82f))
+        drawCircle(color, radius = 3.5.dp.toPx(), center = point(0.76f, 0.82f))
     }
 }
 
@@ -238,6 +287,6 @@ fun CheckMark(modifier: Modifier = Modifier) {
             .background(Color.White.copy(alpha = 0.2f), CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        Text("OK", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text("OK", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 1)
     }
 }

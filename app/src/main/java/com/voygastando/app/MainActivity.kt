@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.core.view.WindowInsetsControllerCompat
 import com.voygastando.app.domain.model.AppThemeMode
 import com.voygastando.app.ui.navigation.VoyGastandoNavHost
 import com.voygastando.app.ui.screen.activepurchase.ActivePurchaseViewModel
@@ -34,6 +35,16 @@ class MainActivity : ComponentActivity() {
                 AppThemeMode.SYSTEM -> systemDarkTheme
                 AppThemeMode.LIGHT -> false
                 AppThemeMode.DARK -> true
+            }
+
+            DisposableEffect(darkTheme) {
+                window.statusBarColor = if (darkTheme) 0xFF0E0B12.toInt() else 0xFFF4F7F5.toInt()
+                window.navigationBarColor = if (darkTheme) 0xFF0E0B12.toInt() else 0xFFFFFFFF.toInt()
+                WindowInsetsControllerCompat(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !darkTheme
+                    isAppearanceLightNavigationBars = !darkTheme
+                }
+                onDispose { }
             }
 
             DisposableEffect(uiState.appSettings.keepScreenOnDuringPurchase, uiState.hasActiveSession) {

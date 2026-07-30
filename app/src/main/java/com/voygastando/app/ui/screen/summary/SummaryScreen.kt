@@ -127,7 +127,7 @@ fun SummaryScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SecondaryActionButton("VER DETALLE", { onViewDetail(session.id) }, modifier = Modifier.weight(1f))
                     SecondaryActionButton(
-                        text = "COMPARTIR",
+                        text = "ENVIAR",
                         onClick = {
                             val shareText = buildShareText(session, moneySettings, formatter)
                             val intent = Intent(Intent.ACTION_SEND).apply {

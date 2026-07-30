@@ -329,7 +329,7 @@ private fun ActionRow(enabled: Boolean, onQuantity: () -> Unit, onSum: () -> Uni
             border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
         ) {
-            Text("CANTIDAD", fontWeight = FontWeight.Black, fontSize = 15.sp)
+            Text("CANT.", fontWeight = FontWeight.Black, fontSize = 15.sp, maxLines = 1)
         }
         PrimaryActionButton("SUMAR", onSum, modifier = Modifier.weight(3f), enabled = enabled, height = 56)
     }

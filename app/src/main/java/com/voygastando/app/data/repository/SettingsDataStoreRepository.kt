@@ -33,7 +33,7 @@ class SettingsDataStoreRepository(
             hideAmountsOnLockScreen = preferences[HIDE_AMOUNTS_ON_LOCK] ?: true,
             confirmBeforeFinish = preferences[CONFIRM_BEFORE_FINISH] ?: true,
             themeMode = preferences[THEME_MODE]?.let { runCatching { AppThemeMode.valueOf(it) }.getOrNull() }
-                ?: AppThemeMode.SYSTEM
+                ?: AppThemeMode.LIGHT
         )
     }
 
