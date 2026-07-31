@@ -26,6 +26,7 @@ data class ShoppingItemEntity(
     val id: Long = 0,
     val sessionId: Long,
     val unitPrice: Long,
+    val name: String?,
     val quantity: Int,
     val subtotal: Long,
     val createdAt: Long,

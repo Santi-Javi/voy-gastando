@@ -87,13 +87,14 @@ interface ShoppingDao {
     }
 
     @Transaction
-    suspend fun addItemToActiveSession(unitPrice: Long, quantity: Int, createdAt: Long): ShoppingItemEntity {
+    suspend fun addItemToActiveSession(unitPrice: Long, name: String?, quantity: Int, createdAt: Long): ShoppingItemEntity {
         val session = requireNotNull(getActiveSession()) { "No hay una compra activa." }
         val subtotal = unitPrice * quantity
         val sortOrder = nextSortOrder(session.id)
         val item = ShoppingItemEntity(
             sessionId = session.id,
             unitPrice = unitPrice,
+            name = name,
             quantity = quantity,
             subtotal = subtotal,
             createdAt = createdAt,

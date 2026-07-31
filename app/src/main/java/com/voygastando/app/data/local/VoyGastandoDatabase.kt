@@ -11,7 +11,7 @@ import com.voygastando.app.data.local.entity.ShoppingSessionEntity
         ShoppingSessionEntity::class,
         ShoppingItemEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

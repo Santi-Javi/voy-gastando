@@ -36,17 +36,18 @@ class RoomShoppingRepository(
         )
     }
 
-    override suspend fun addItem(unitPrice: Long, quantity: Int): ShoppingItem {
+    override suspend fun addItem(unitPrice: Long, quantity: Int, name: String?): ShoppingItem {
         val current = dao.getActiveSession() ?: error("No hay una compra activa.")
         moneyCalculator.validateNewItem(unitPrice, quantity, current.total)
         return dao.addItemToActiveSession(
             unitPrice = unitPrice,
+            name = name?.trim()?.takeIf { it.isNotBlank() }?.take(MAX_NAME_LENGTH),
             quantity = quantity,
             createdAt = clock()
         ).toDomain()
     }
 
-    override suspend fun updateItem(itemId: Long, unitPrice: Long, quantity: Int) {
+    override suspend fun updateItem(itemId: Long, unitPrice: Long, quantity: Int, name: String?) {
         val item = dao.getItem(itemId) ?: error("No se encontro el producto.")
         val session = dao.getSession(item.sessionId) ?: error("No se encontro la compra.")
         val totalWithoutItem = session.total - item.subtotal
@@ -54,6 +55,7 @@ class RoomShoppingRepository(
         dao.updateItemAndRecalculate(
             item.copy(
                 unitPrice = unitPrice,
+                name = name?.trim()?.takeIf { it.isNotBlank() }?.take(MAX_NAME_LENGTH),
                 quantity = quantity,
                 subtotal = moneyCalculator.subtotal(unitPrice, quantity)
             )
@@ -79,6 +81,7 @@ class RoomShoppingRepository(
         val restored = ShoppingItemEntity(
             sessionId = active.id,
             unitPrice = item.unitPrice,
+            name = item.name,
             quantity = item.quantity,
             subtotal = moneyCalculator.subtotal(item.unitPrice, item.quantity),
             createdAt = clock(),
@@ -103,5 +106,9 @@ class RoomShoppingRepository(
             "Solo se pueden eliminar compras finalizadas."
         }
         dao.deleteSessionById(sessionId)
+    }
+
+    private companion object {
+        const val MAX_NAME_LENGTH = 48
     }
 }

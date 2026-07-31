@@ -63,6 +63,7 @@ fun ActivePurchaseScreen(
     formatter: MoneyFormatter,
     events: SharedFlow<ActivePurchaseEvent>,
     onAppendDigit: (String) -> Unit,
+    onProductNameChange: (String) -> Unit,
     onBackspace: () -> Unit,
     onClearInput: () -> Unit,
     onAddCurrentInput: (Int) -> Unit,
@@ -176,6 +177,11 @@ fun ActivePurchaseScreen(
         ) {
             ActiveHeader(uiState, formatter, onEditBudget = { showBudgetDialog = true })
             AmountDisplay(uiState, formatter)
+            ProductNameInput(
+                value = uiState.currentProductName,
+                onValueChange = onProductNameChange,
+                enabled = !uiState.isAdding
+            )
             NumericKeypad(
                 enabled = !uiState.isAdding,
                 onAppendDigit = onAppendDigit,
@@ -264,6 +270,32 @@ private fun AmountDisplay(uiState: ActivePurchaseUiState, formatter: MoneyFormat
             )
         }
     }
+}
+
+@Composable
+private fun ProductNameInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    enabled: Boolean
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        enabled = enabled,
+        singleLine = true,
+        label = { Text("Producto opcional") },
+        placeholder = { Text("Ej: leche, pan, detergente") },
+        shape = RoundedCornerShape(16.dp),
+        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+        )
+    )
 }
 
 @Composable
@@ -359,6 +391,14 @@ private fun LastAmountBlock(
         ) {
             Column {
                 Text("Ultimo importe", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                if (!lastItem.name.isNullOrBlank()) {
+                    Text(
+                        lastItem.name,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp
+                    )
+                }
                 Text(
                     "${formatter.format(lastItem.unitPrice, uiState.moneySettings)} x ${lastItem.quantity}",
                     fontWeight = FontWeight.Black,

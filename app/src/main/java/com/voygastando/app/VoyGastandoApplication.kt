@@ -2,6 +2,8 @@ package com.voygastando.app
 
 import android.app.Application
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.voygastando.app.data.local.VoyGastandoDatabase
 import com.voygastando.app.data.repository.RoomShoppingRepository
 import com.voygastando.app.data.repository.SettingsDataStoreRepository
@@ -25,7 +27,7 @@ class AppContainer(application: Application) {
         application,
         VoyGastandoDatabase::class.java,
         "voy_gastando.db"
-    ).build()
+    ).addMigrations(MIGRATION_1_2).build()
 
     val settingsRepository: SettingsRepository = SettingsDataStoreRepository(application)
     val moneyCalculator = MoneyCalculator()
@@ -35,4 +37,12 @@ class AppContainer(application: Application) {
         settingsRepository = settingsRepository,
         moneyCalculator = moneyCalculator
     )
+
+    private companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE shopping_items ADD COLUMN name TEXT")
+            }
+        }
+    }
 }

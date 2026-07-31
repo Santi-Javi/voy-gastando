@@ -99,6 +99,7 @@ fun VoyGastandoNavHost(
                     formatter = moneyFormatter,
                     events = viewModel.uiEvents,
                     onAppendDigit = viewModel::appendDigit,
+                    onProductNameChange = viewModel::setCurrentProductName,
                     onBackspace = viewModel::backspace,
                     onClearInput = viewModel::clearInput,
                     onAddCurrentInput = viewModel::addCurrentInput,
@@ -195,7 +196,7 @@ fun VoyGastandoNavHost(
                     formatter = moneyFormatter,
                     readOnly = true,
                     onBack = { navController.popBackStack() },
-                    onEditItem = { _, _, _ -> },
+                    onEditItem = { _, _, _, _ -> },
                     onDeleteItem = { }
                 )
             }

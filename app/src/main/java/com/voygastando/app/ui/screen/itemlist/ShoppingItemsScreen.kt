@@ -48,7 +48,7 @@ fun ShoppingItemsScreen(
     formatter: MoneyFormatter,
     readOnly: Boolean,
     onBack: () -> Unit,
-    onEditItem: (Long, Long, Int) -> Unit,
+    onEditItem: (Long, Long, Int, String?) -> Unit,
     onDeleteItem: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -62,9 +62,9 @@ fun ShoppingItemsScreen(
             formatter = formatter,
             moneySettings = moneySettings,
             onDismiss = { editingItem = null },
-            onConfirm = { price, quantity ->
+            onConfirm = { price, quantity, name ->
                 editingItem = null
-                onEditItem(item.id, price, quantity)
+                onEditItem(item.id, price, quantity, name)
             }
         )
     }
@@ -178,6 +178,14 @@ private fun ShoppingItemRow(
     ) {
         Text("$index.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         Column(Modifier.weight(1f)) {
+            if (!item.name.isNullOrBlank()) {
+                Text(
+                    text = item.name,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black
+                )
+            }
             Text(
                 text = "${formatter.format(item.unitPrice, moneySettings)} x ${item.quantity} = ${formatter.format(item.subtotal, moneySettings)}",
                 color = MaterialTheme.colorScheme.onSurface,
@@ -205,8 +213,9 @@ private fun EditItemDialog(
     formatter: MoneyFormatter,
     moneySettings: MoneySettings,
     onDismiss: () -> Unit,
-    onConfirm: (Long, Int) -> Unit
+    onConfirm: (Long, Int, String?) -> Unit
 ) {
+    var nameText by remember(item.id) { mutableStateOf(item.name.orEmpty()) }
     var priceText by remember(item.id) { mutableStateOf(item.unitPrice.toString()) }
     var quantityText by remember(item.id) { mutableStateOf(item.quantity.toString()) }
     val price = priceText.toLongOrNull() ?: 0L
@@ -218,6 +227,13 @@ private fun EditItemDialog(
         title = { Text("Editar producto", fontWeight = FontWeight.Black) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = { nameText = it.take(48) },
+                    label = { Text("Producto opcional") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp)
+                )
                 OutlinedTextField(
                     value = priceText,
                     onValueChange = { priceText = it.filter(Char::isDigit).take(10) },
@@ -244,7 +260,7 @@ private fun EditItemDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(price, quantity) },
+                onClick = { onConfirm(price, quantity, nameText.trim().takeIf { it.isNotBlank() }) },
                 enabled = price > 0 && quantity in 1..99,
                 modifier = Modifier.height(48.dp),
                 shape = RoundedCornerShape(16.dp)

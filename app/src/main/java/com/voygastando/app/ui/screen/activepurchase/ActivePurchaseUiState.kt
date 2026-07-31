@@ -20,6 +20,7 @@ data class ActivePurchaseUiState(
     val moneySettings: MoneySettings = MoneySettings(),
     val appSettings: AppSettings = AppSettings(),
     val currentInput: String = "",
+    val currentProductName: String = "",
     val currentAmount: Long = 0,
     val isAdding: Boolean = false,
     val errorMessage: String? = null

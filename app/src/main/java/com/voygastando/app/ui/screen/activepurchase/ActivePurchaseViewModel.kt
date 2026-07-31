@@ -25,6 +25,7 @@ class ActivePurchaseViewModel(
 ) : ViewModel() {
     private val errorMessage = MutableStateFlow<String?>(null)
     private val currentInput = MutableStateFlow("")
+    private val currentProductName = MutableStateFlow("")
     private val isAdding = MutableStateFlow(false)
     private val events = MutableSharedFlow<ActivePurchaseEvent>()
     private var lastAddAttemptAt = 0L
@@ -42,10 +43,11 @@ class ActivePurchaseViewModel(
     val uiState: StateFlow<ActivePurchaseUiState> = combine(
         shoppingRepository.observeActiveSession(),
         settingsRepository.appSettings,
-        currentInput,
+        combine(currentInput, currentProductName) { input, productName -> input to productName },
         isAdding,
         errorMessage
-    ) { session, appSettings, input, adding, error ->
+    ) { session, appSettings, inputAndName, adding, error ->
+        val (input, productName) = inputAndName
         val amount = input.toLongOrNull() ?: 0L
         ActivePurchaseUiState(
             isLoading = false,
@@ -54,6 +56,7 @@ class ActivePurchaseViewModel(
             moneySettings = appSettings.moneySettings,
             appSettings = appSettings,
             currentInput = input,
+            currentProductName = productName,
             currentAmount = amount,
             isAdding = adding,
             errorMessage = error
@@ -83,9 +86,10 @@ class ActivePurchaseViewModel(
             lastAddSignature = signature
 
             isAdding.value = true
-            runCatching { shoppingRepository.addItem(unitPrice, quantity) }
+            runCatching { shoppingRepository.addItem(unitPrice, quantity, currentProductName.value) }
                 .onSuccess { item ->
                     currentInput.value = ""
+                    currentProductName.value = ""
                     events.emit(ActivePurchaseEvent.ItemAdded(item.subtotal))
                 }
                 .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo agregar el producto.")) }
@@ -104,6 +108,10 @@ class ActivePurchaseViewModel(
 
     fun clearInput() {
         currentInput.value = ""
+    }
+
+    fun setCurrentProductName(name: String) {
+        currentProductName.value = name.take(MAX_PRODUCT_NAME_LENGTH)
     }
 
     fun addCurrentInput(quantity: Int = 1) {
@@ -179,9 +187,9 @@ class ActivePurchaseViewModel(
         viewModelScope.launch { settingsRepository.setThemeMode(mode) }
     }
 
-    fun updateItem(itemId: Long, unitPrice: Long, quantity: Int) {
+    fun updateItem(itemId: Long, unitPrice: Long, quantity: Int, name: String?) {
         viewModelScope.launch {
-            runCatching { shoppingRepository.updateItem(itemId, unitPrice, quantity) }
+            runCatching { shoppingRepository.updateItem(itemId, unitPrice, quantity, name) }
                 .onSuccess { events.emit(ActivePurchaseEvent.Message("Producto actualizado.")) }
                 .onFailure { events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo actualizar el producto.")) }
         }
@@ -237,6 +245,7 @@ class ActivePurchaseViewModel(
 
     private companion object {
         const val MAX_INPUT_DIGITS = 10
+        const val MAX_PRODUCT_NAME_LENGTH = 48
         const val ADD_DEBOUNCE_MS = 700L
     }
 }

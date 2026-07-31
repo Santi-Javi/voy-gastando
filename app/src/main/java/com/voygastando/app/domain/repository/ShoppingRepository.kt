@@ -13,9 +13,9 @@ interface ShoppingRepository {
 
     suspend fun startShoppingSession(budget: Long?): Long
 
-    suspend fun addItem(unitPrice: Long, quantity: Int): ShoppingItem
+    suspend fun addItem(unitPrice: Long, quantity: Int, name: String?): ShoppingItem
 
-    suspend fun updateItem(itemId: Long, unitPrice: Long, quantity: Int)
+    suspend fun updateItem(itemId: Long, unitPrice: Long, quantity: Int, name: String?)
 
     suspend fun deleteItem(itemId: Long)
 
