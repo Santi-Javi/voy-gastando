@@ -2,6 +2,7 @@ package com.voygastando.app.ui.screen.activepurchase
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -172,6 +175,8 @@ fun ActivePurchaseScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .navigationBarsPadding()
+                .imePadding()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -180,7 +185,14 @@ fun ActivePurchaseScreen(
             ProductNameInput(
                 value = uiState.currentProductName,
                 onValueChange = onProductNameChange,
-                enabled = !uiState.isAdding
+                enabled = !uiState.isAdding,
+                suggestions = uiState.activeSession?.items.orEmpty()
+                    .asSequence()
+                    .mapNotNull { it.name?.takeIf { name -> name.isNotBlank() } }
+                    .distinct()
+                    .take(6)
+                    .toList()
+                    .orEmpty()
             )
             NumericKeypad(
                 enabled = !uiState.isAdding,
@@ -276,26 +288,50 @@ private fun AmountDisplay(uiState: ActivePurchaseUiState, formatter: MoneyFormat
 private fun ProductNameInput(
     value: String,
     onValueChange: (String) -> Unit,
-    enabled: Boolean
+    enabled: Boolean,
+    suggestions: List<String>
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        enabled = enabled,
-        singleLine = true,
-        label = { Text("Producto opcional") },
-        placeholder = { Text("Ej: leche, pan, detergente") },
-        shape = RoundedCornerShape(16.dp),
-        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surface,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+    Column(
+        modifier = Modifier.padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            singleLine = true,
+            label = { Text("Producto opcional") },
+            placeholder = { Text("Ej: leche, pan, detergente") },
+            shape = RoundedCornerShape(16.dp),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+            )
         )
-    )
+        if (suggestions.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                suggestions.forEach { suggestion ->
+                    TextButton(
+                        onClick = { onValueChange(suggestion) },
+                        enabled = enabled,
+                        modifier = Modifier
+                            .height(34.dp)
+                            .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(14.dp))
+                    ) {
+                        Text(suggestion, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

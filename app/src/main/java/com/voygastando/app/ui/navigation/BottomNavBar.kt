@@ -4,8 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -17,9 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -32,37 +32,50 @@ fun BottomNavBar(
     onHistory: () -> Unit,
     onSettings: () -> Unit
 ) {
+    val items = buildList {
+        add(BottomNavItem("Inicio", currentRoute == AppRoute.Home.route, onHome))
+        if (hasActiveSession) {
+            add(BottomNavItem("Compra", currentRoute == AppRoute.ActivePurchase.route, onActive))
+        }
+        add(BottomNavItem("Historial", currentRoute == AppRoute.History.route, onHistory))
+        add(BottomNavItem("Config.", currentRoute == AppRoute.Settings.route, onSettings))
+    }
+
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .navigationBarsPadding(),
+            .fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                .navigationBarsPadding()
+                .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
-            BottomItem("Inicio", "Ini", currentRoute == AppRoute.Home.route, onHome)
-            BottomItem("Compra", "+", currentRoute == AppRoute.ActivePurchase.route, onActive, enabled = hasActiveSession)
-            BottomItem("Historial", "Hist", currentRoute == AppRoute.History.route, onHistory)
-            BottomItem("Config.", "Conf", currentRoute == AppRoute.Settings.route, onSettings)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items.forEach { item ->
+                    BottomItem(item)
+                }
+            }
         }
     }
 }
 
+private data class BottomNavItem(
+    val label: String,
+    val selected: Boolean,
+    val onClick: () -> Unit
+)
+
 @Composable
-private fun RowScope.BottomItem(
-    label: String,
-    icon: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    enabled: Boolean = true
-) {
-    val contentColor = if (selected) {
+private fun RowScope.BottomItem(item: BottomNavItem) {
+    val contentColor = if (item.selected) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
@@ -70,25 +83,25 @@ private fun RowScope.BottomItem(
     Column(
         modifier = Modifier
             .weight(1f)
-            .height(52.dp)
-            .alpha(if (enabled) 1f else 0.35f)
+            .height(50.dp)
             .background(
-                if (selected) MaterialTheme.colorScheme.secondary else androidx.compose.ui.graphics.Color.Transparent,
+                if (item.selected) MaterialTheme.colorScheme.secondary else androidx.compose.ui.graphics.Color.Transparent,
                 RoundedCornerShape(16.dp)
             )
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = 5.dp),
+            .clickable(onClick = item.onClick)
+            .padding(horizontal = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = icon,
+            text = item.label,
             color = contentColor,
             fontWeight = FontWeight.Black,
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             maxLines = 1,
-            textAlign = TextAlign.Center
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
-        Text(label, color = contentColor, fontWeight = FontWeight.Bold, fontSize = 10.sp, maxLines = 1)
     }
 }
