@@ -100,6 +100,7 @@ fun VoyGastandoNavHost(
                     events = viewModel.uiEvents,
                     onAppendDigit = viewModel::appendDigit,
                     onProductNameChange = viewModel::setCurrentProductName,
+                    onVoiceCommand = viewModel::applyVoiceCommand,
                     onBackspace = viewModel::backspace,
                     onClearInput = viewModel::clearInput,
                     onAddCurrentInput = viewModel::addCurrentInput,

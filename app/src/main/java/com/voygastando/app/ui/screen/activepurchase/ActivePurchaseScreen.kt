@@ -1,5 +1,10 @@
 package com.voygastando.app.ui.screen.activepurchase
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -38,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +64,7 @@ import com.voygastando.app.ui.components.SoftPill
 import com.voygastando.app.ui.components.StatRow
 import com.voygastando.app.util.MoneyFormatter
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Composable
@@ -67,6 +74,7 @@ fun ActivePurchaseScreen(
     events: SharedFlow<ActivePurchaseEvent>,
     onAppendDigit: (String) -> Unit,
     onProductNameChange: (String) -> Unit,
+    onVoiceCommand: (String) -> Unit,
     onBackspace: () -> Unit,
     onClearInput: () -> Unit,
     onAddCurrentInput: (Int) -> Unit,
@@ -80,10 +88,37 @@ fun ActivePurchaseScreen(
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     var showQuantityDialog by remember { mutableStateOf(false) }
     var showBudgetDialog by remember { mutableStateOf(false) }
     var showFinishDialog by remember { mutableStateOf(false) }
+    val voiceLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            if (!spokenText.isNullOrBlank()) {
+                onVoiceCommand(spokenText)
+            }
+        }
+    }
+
+    fun startVoiceInput() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-AR")
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Deci: leche 2500 tres productos sumar")
+        }
+        runCatching { voiceLauncher.launch(intent) }
+            .onFailure {
+                scope.launch {
+                    snackbarHostState.showSnackbar("No pude abrir el dictado de Android.")
+                }
+            }
+    }
 
     LaunchedEffect(events, uiState.appSettings.vibrateOnAdd) {
         events.collect { event ->
@@ -185,6 +220,7 @@ fun ActivePurchaseScreen(
             ProductNameInput(
                 value = uiState.currentProductName,
                 onValueChange = onProductNameChange,
+                onVoiceInput = ::startVoiceInput,
                 enabled = !uiState.isAdding,
                 suggestions = uiState.activeSession?.items.orEmpty()
                     .asSequence()
@@ -202,9 +238,11 @@ fun ActivePurchaseScreen(
             )
             ActionRow(
                 enabled = !uiState.isAdding,
+                canUndo = uiState.lastItem != null,
                 onQuantity = {
                     if (uiState.currentAmount > 0) showQuantityDialog = true else onAddCurrentInput(1)
                 },
+                onUndo = onUndoLastItem,
                 onSum = { onAddCurrentInput(1) }
             )
             LastAmountBlock(uiState, formatter, onUndoLastItem)
@@ -288,6 +326,7 @@ private fun AmountDisplay(uiState: ActivePurchaseUiState, formatter: MoneyFormat
 private fun ProductNameInput(
     value: String,
     onValueChange: (String) -> Unit,
+    onVoiceInput: () -> Unit,
     enabled: Boolean,
     suggestions: List<String>
 ) {
@@ -303,6 +342,11 @@ private fun ProductNameInput(
             singleLine = true,
             label = { Text("Producto opcional") },
             placeholder = { Text("Ej: leche, pan, detergente") },
+            trailingIcon = {
+                TextButton(onClick = onVoiceInput, enabled = enabled) {
+                    Text("MIC", fontSize = 11.sp, fontWeight = FontWeight.Black)
+                }
+            },
             shape = RoundedCornerShape(16.dp),
             colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -380,7 +424,13 @@ private fun NumericKeypad(
 }
 
 @Composable
-private fun ActionRow(enabled: Boolean, onQuantity: () -> Unit, onSum: () -> Unit) {
+private fun ActionRow(
+    enabled: Boolean,
+    canUndo: Boolean,
+    onQuantity: () -> Unit,
+    onUndo: () -> Unit,
+    onSum: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -390,7 +440,7 @@ private fun ActionRow(enabled: Boolean, onQuantity: () -> Unit, onSum: () -> Uni
         OutlinedButton(
             onClick = onQuantity,
             modifier = Modifier
-                .weight(2f)
+                .weight(1f)
                 .height(56.dp),
             enabled = enabled,
             shape = RoundedCornerShape(18.dp),
@@ -399,7 +449,19 @@ private fun ActionRow(enabled: Boolean, onQuantity: () -> Unit, onSum: () -> Uni
         ) {
             Text("CANT.", fontWeight = FontWeight.Black, fontSize = 15.sp, maxLines = 1)
         }
-        PrimaryActionButton("SUMAR", onSum, modifier = Modifier.weight(3f), enabled = enabled, height = 56)
+        OutlinedButton(
+            onClick = onUndo,
+            modifier = Modifier
+                .weight(1f)
+                .height(56.dp),
+            enabled = enabled && canUndo,
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(2.dp, MaterialTheme.colorScheme.error.copy(alpha = if (canUndo) 0.95f else 0.24f)),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+        ) {
+            Text("RESTAR", fontWeight = FontWeight.Black, fontSize = 13.sp, maxLines = 1)
+        }
+        PrimaryActionButton("SUMAR", onSum, modifier = Modifier.weight(2f), enabled = enabled, height = 56)
     }
 }
 

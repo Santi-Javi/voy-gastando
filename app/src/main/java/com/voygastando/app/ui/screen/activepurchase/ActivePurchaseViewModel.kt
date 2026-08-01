@@ -9,6 +9,7 @@ import com.voygastando.app.domain.model.AppThemeMode
 import com.voygastando.app.domain.repository.SettingsRepository
 import com.voygastando.app.domain.repository.ShoppingRepository
 import com.voygastando.app.domain.usecase.MoneyCalculator
+import com.voygastando.app.domain.usecase.VoiceCommandParser
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -17,11 +18,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.Normalizer
 
 class ActivePurchaseViewModel(
     private val shoppingRepository: ShoppingRepository,
     private val settingsRepository: SettingsRepository,
-    private val moneyCalculator: MoneyCalculator
+    private val moneyCalculator: MoneyCalculator,
+    private val voiceCommandParser: VoiceCommandParser = VoiceCommandParser()
 ) : ViewModel() {
     private val errorMessage = MutableStateFlow<String?>(null)
     private val currentInput = MutableStateFlow("")
@@ -137,6 +140,72 @@ class ActivePurchaseViewModel(
         }
     }
 
+    fun applyVoiceCommand(text: String) {
+        val command = voiceCommandParser.parsePurchase(text)
+        if (command == null) {
+            viewModelScope.launch {
+                events.emit(ActivePurchaseEvent.Message("No pude entender el comando. Proba: leche 2500 sumar."))
+            }
+            return
+        }
+
+        if (command.shouldSubtract) {
+            subtractVoiceCommand(command.name, command.quantity)
+            return
+        }
+
+        val price = command.price
+        if (price == null || price <= 0) {
+            viewModelScope.launch {
+                events.emit(ActivePurchaseEvent.Message("No pude entender el precio. Proba: leche 2500 sumar."))
+            }
+            return
+        }
+
+        currentProductName.value = command.name
+        currentInput.value = price.toString()
+        if (command.shouldAdd) {
+            addItem(price, command.quantity)
+        } else {
+            viewModelScope.launch {
+                events.emit(ActivePurchaseEvent.Message("Listo para sumar: ${command.name.ifBlank { "producto" }} x ${command.quantity}."))
+            }
+        }
+    }
+
+    private fun subtractVoiceCommand(name: String, quantity: Int) {
+        viewModelScope.launch {
+            val session = uiState.value.activeSession
+            val item = session?.items
+                .orEmpty()
+                .sortedByDescending { it.sortOrder }
+                .firstOrNull { item ->
+                    val itemName = item.name.orEmpty().normalizedForMatch()
+                    val commandName = name.normalizedForMatch()
+                    commandName.isNotBlank() && (itemName == commandName || itemName.contains(commandName) || commandName.contains(itemName))
+                }
+
+            if (item == null) {
+                events.emit(ActivePurchaseEvent.Message("No encontre ese producto para restar."))
+                return@launch
+            }
+
+            val nextQuantity = item.quantity - quantity.coerceAtLeast(1)
+            runCatching {
+                if (nextQuantity > 0) {
+                    shoppingRepository.updateItem(item.id, item.unitPrice, nextQuantity, item.name)
+                } else {
+                    shoppingRepository.deleteItem(item.id)
+                }
+            }.onSuccess {
+                val label = item.name?.takeIf { it.isNotBlank() } ?: "producto"
+                events.emit(ActivePurchaseEvent.Message("Restado: $label x ${quantity.coerceAtLeast(1)}."))
+            }.onFailure {
+                events.emit(ActivePurchaseEvent.Message(it.message ?: "No se pudo restar el producto."))
+            }
+        }
+    }
+
     fun restoreItem(item: ShoppingItem) {
         viewModelScope.launch {
             runCatching { shoppingRepository.restoreItem(item) }
@@ -249,3 +318,10 @@ class ActivePurchaseViewModel(
         const val ADD_DEBOUNCE_MS = 700L
     }
 }
+
+private fun String.normalizedForMatch(): String =
+    Normalizer.normalize(lowercase().trim(), Normalizer.Form.NFD)
+        .replace("\\p{Mn}+".toRegex(), "")
+        .replace("[^a-z0-9 ]".toRegex(), " ")
+        .replace("\\s+".toRegex(), " ")
+        .trim()
